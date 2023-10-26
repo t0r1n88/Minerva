@@ -121,12 +121,12 @@ def find_diag(cell):
     pattern = r"(Как я выбираю|Почему я выбираю|Что я выбираю)"
 
     if cell is np.nan:
-        return cell
+        return 0
     matches = re.findall(pattern,cell)
     if len(matches)>=3:
-        return 'Пройдены Как я выбираю|Почему я выбираю|Что я выбираю'
+        return 1
     else:
-        return ' '.join(matches)
+        return 0
 
 
 def generate_report_diag(diag_df:pd.DataFrame,begin_event,end_event)->openpyxl.Workbook:
@@ -138,7 +138,10 @@ def generate_report_diag(diag_df:pd.DataFrame,begin_event,end_event)->openpyxl.W
     :return: файл openpyxl
     """
     diag_df['ФИО']=diag_df['ФИО'].apply(lambda x:x.strip())
+    diag_df['ФИО'] = diag_df['ФИО'].apply(lambda x: x.replace('\n',''))
     temp_req_df = diag_df.copy()
+    temp_req_df['Обяз диагностика'] = temp_req_df['темы диагностик'].apply(find_diag)
+    temp_req_df = temp_req_df[temp_req_df['Обяз диагностика'] == 1]
 
     # разворачиваем датафрейм чтобы названия и даты диагностик записанные через запятую создали новые строки
     diag_rows = []  # список для хранения строк
