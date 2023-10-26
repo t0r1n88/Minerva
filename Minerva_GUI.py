@@ -128,7 +128,19 @@ def processing_report_students():
         messagebox.showerror('Минерва Отчеты и пробы Билет в будущее',
                              f'Выберите файл с данными и папку куда будут генерироваться файлы')
         logging.exception('AN ERROR HAS OCCURRED')
-
+    except KeyError as e:
+        messagebox.showerror('Минерва Отчеты и пробы Билет в будущее',
+                             f'В таблице не найдена указанная колонка {e.args}')
+    except PermissionError:
+        messagebox.showerror('Минерва Отчеты и пробы Билет в будущее',
+                             f'Закройте все файлы созданные Минервой')
+    except FileNotFoundError:
+        messagebox.showerror('Минерва Отчеты и пробы Билет в будущее',
+                             f'Перенесите файлы которые вы хотите обработать в корень диска. Проблема может быть\n '
+                             f'в слишком длинном пути к обрабатываемым файлам')
+    else:
+        messagebox.showinfo('Минерва Отчеты и пробы Билет в будущее',
+                            'Создание отчетов завершено!')
 
 
 
@@ -140,9 +152,49 @@ if __name__ == '__main__':
 
     tab_control = ttk.Notebook(window)
 
+    """
+    Создаем вкладку для создания отчетов по профпробам
+    """
+    tab_create_report_bvb = ttk.Frame(tab_control)
+    tab_control.add(tab_create_report_bvb, text='Отчеты по БВБ')
+    tab_control.pack(expand=1, fill='both')
 
+    # Добавляем виджеты на вкладку Создание документов
+    # Создаем метку для описания назначения программы
+    lbl_hello_report = Label(tab_create_report_bvb,
+                      text='Центр опережающей профессиональной подготовки Республики Бурятия\nСоздание отчетов по БВБ')
+    lbl_hello_report.grid(column=0, row=0, padx=10, pady=25)
 
+    # Картинка
+    path_to_img_report = resource_path('logo.png')
+    img_report = PhotoImage(file=path_to_img_report)
+    Label(tab_create_report_bvb,
+          image=img_report
+          ).grid(column=1, row=0, padx=10, pady=25)
 
+    # Создаем область для того чтобы поместить туда подготовительные кнопки(выбрать файл,выбрать папку и т.п.)
+    frame_data_for_report = LabelFrame(tab_create_report_bvb, text='Подготовка')
+    frame_data_for_report.grid(column=0, row=2, padx=10)
+
+    # Создаем кнопку Выбрать файл с данными
+    btn_data_report = Button(frame_data_for_report, text='1) Выберите файл с учениками', font=('Arial Bold', 15),
+                          command=select_file_data_students
+                          )
+    btn_data_report.grid(column=0, row=4, padx=10, pady=10)
+    #
+    # Создаем кнопку для выбора папки куда будут генерироваться файлы
+
+    btn_choose_end_folder_report = Button(frame_data_for_report, text='2) Выберите конечную папку', font=('Arial Bold', 15),
+                                       command=select_end_folder_students
+                                       )
+    btn_choose_end_folder_report.grid(column=0, row=5, padx=10, pady=10)
+
+    # Создаем кнопку генерации
+
+    btn_processing_report = Button(frame_data_for_report, text='3) Создать отчеты', font=('Arial Bold', 15),
+                             command=processing_report_students
+                             )
+    btn_processing_report.grid(column=0, row=6, padx=10, pady=10)
 
 
     """

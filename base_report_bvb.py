@@ -6,7 +6,7 @@ import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 import time
-import datetime
+from tkinter import messagebox
 import re
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
@@ -22,6 +22,7 @@ def main_create_report(path_file_data:str,path_end_folder):
     :param path_end_folder: папка куда будут сохранены данные
     :return:
     """
+
     t = time.localtime()
     current_time = time.strftime('%H_%M_%S', t) # получаем время запуска
     df = pd.read_excel(path_file_data,dtype=str,skiprows=3)
@@ -30,25 +31,31 @@ def main_create_report(path_file_data:str,path_end_folder):
     df['даты прохождения'] = df['даты прохождения'].fillna('Пусто')
     df['темы диагностик'] = df['темы диагностик'].fillna('Пусто')
     df['даты пройденных диагностик'] = df['даты пройденных диагностик'].fillna('Пусто')
+    begin = pd.to_datetime('2023-09-01')
+    end = pd.to_datetime('2023-12-01')
 
-
-
-    wb_more_probs = generate_enroll_more_probs(df.copy())
-    wb_diag = generate_report_diag(df.copy())
+    wb_more_probs = generate_enroll_more_probs(df.copy(),begin,end)
+    wb_diag = generate_report_diag(df.copy(),begin,end)
 
     wb_more_probs.save(f'{path_end_folder}/Записавшиеся на 2 и более профпроб {current_time}.xlsx')
     wb_diag.save(f'{path_end_folder}/Свод по диагностике {current_time}.xlsx')
 
 
-def generate_enroll_more_probs(df:pd.DataFrame):
+
+
+
+def generate_enroll_more_probs(df:pd.DataFrame,begin_event,end_event):
     """
     Функция для генерации списка школьников записавшихся на 2 и более профпроб в 2023 году
     :param df: датафрейм
+    :param begin_event: дата начала
+    :param end_event: дата конца
     :return:
     """
 
     wb = openpyxl.Workbook()  # файл для записавшихся на 2 и более профпробы
     wb.create_sheet('Записавшиеся на 2 и более проб', index=0) # создаем лист
+
 
 
     # разворачиваем датафрейм чтобы названия и даты профпроб развернулись в новые строки
@@ -70,14 +77,12 @@ def generate_enroll_more_probs(df:pd.DataFrame):
     # Приводим к типу дата
     flat_df['даты прохождения'] = flat_df['даты прохождения'].astype(str)
     flat_df['даты прохождения'] = flat_df['даты прохождения'].apply(lambda x: x.strip())
-    flat_df = flat_df[flat_df['даты прохождения'] != 'Пусто']  # удаляем тех кто не проходил
-    flat_df['даты прохождения'] = pd.to_datetime(flat_df['даты прохождения'], dayfirst=True,
+    flat_df = flat_df[flat_df['даты прохождения'] != 'Пусто'] # удаляем тех кто не проходил
+    flat_df['даты прохождения'] = pd.to_datetime(flat_df['даты прохождения'],
                                                  errors='ignore')  # приводим к типу дата
 
-    flat_df = flat_df[(flat_df['даты прохождения'] > '2023-09-01') & (
-                flat_df['даты прохождения'] < '2023-12-01')]  # отбираем только те профпробы которые были этой осенью
-
-    print(flat_df.head())
+    flat_df = flat_df[(flat_df['даты прохождения'] >= begin_event) & (
+                flat_df['даты прохождения'] <= end_event)]  # отбираем только те профпробы которые были этой осенью
 
     dupl_df = flat_df[flat_df.duplicated(subset=['ФИО', 'Дата рождения'], keep=False)]  # отбираем дубликаты
     lst_out = ['Муниципалитет', 'ФИО', 'Дата рождения', 'образовательная организация', 'класс (без буквы)',
@@ -107,10 +112,12 @@ def generate_enroll_more_probs(df:pd.DataFrame):
     return wb
 
 
-def generate_report_diag(diag_df:pd.DataFrame)->openpyxl.Workbook:
+def generate_report_diag(diag_df:pd.DataFrame,begin_event,end_event)->openpyxl.Workbook:
     """
     Функция для генерации количества школьников прошедщих хотя бы одну диагностику по муниципалитетам и школам
     :param diag_df: датафрейм
+    :param begin_event:дата начала
+    :param begin_event:дата конца
     :return: файл openpyxl
     """
     # разворачиваем датафрейм чтобы названия и даты диагностик записанные через запятую создали новые строки
@@ -132,11 +139,12 @@ def generate_report_diag(diag_df:pd.DataFrame)->openpyxl.Workbook:
     diag_df['даты пройденных диагностик'] = diag_df['даты пройденных диагностик'].astype(str)
     diag_df['даты пройденных диагностик'] = diag_df['даты пройденных диагностик'].apply(lambda x: x.strip())
     diag_df = diag_df[diag_df['даты пройденных диагностик'] != 'Пусто']  # удаляем тех кто не проходил
-    diag_df['даты пройденных диагностик'] = pd.to_datetime(diag_df['даты пройденных диагностик'], dayfirst=True,
+    diag_df['даты пройденных диагностик'] = pd.to_datetime(diag_df['даты пройденных диагностик'],
                                                            errors='ignore')  # приводим к типу дата
 
-    diag_df = diag_df[(diag_df['даты пройденных диагностик'] > '2023-09-01') & (diag_df[
-                                                                                    'даты пройденных диагностик'] < '2023-12-01')]  # отбираем только те профпробы которые были этой осенью
+    diag_df = diag_df[(diag_df['даты пройденных диагностик'] >= begin_event) & (diag_df[
+                                                                                    'даты пройденных диагностик'] <= end_event)]  # отбираем только те профпробы которые были этой осенью
+
 
     drop_dupl_diag_df = diag_df.drop_duplicates(subset=['ФИО', 'Дата рождения', 'образовательная организация']) # убираем лишние строки
     # делаем сводную таблицу
