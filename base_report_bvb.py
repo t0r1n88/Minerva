@@ -2,6 +2,7 @@
 Скрипт для генерации некоторых отчетов полезных в работе над билетом в будущее
 """
 import pandas as pd
+import numpy as np
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
@@ -111,6 +112,22 @@ def generate_enroll_more_probs(df:pd.DataFrame,begin_event,end_event):
         wb['Записавшиеся на 2 и более проб'].column_dimensions[column_name].width = adjusted_width
     return wb
 
+def find_diag(cell):
+    """
+    Функция для поиска вхождения трех названий диагностик
+    :param cell: значение ячейки
+    :return:
+    """
+    pattern = r"(Как я выбираю|Почему я выбираю|Что я выбираю)"
+
+    if cell is np.nan:
+        return cell
+    matches = re.findall(pattern,cell)
+    if len(matches)>=3:
+        return 'Пройдены Как я выбираю|Почему я выбираю|Что я выбираю'
+    else:
+        return ' '.join(matches)
+
 
 def generate_report_diag(diag_df:pd.DataFrame,begin_event,end_event)->openpyxl.Workbook:
     """
@@ -120,6 +137,9 @@ def generate_report_diag(diag_df:pd.DataFrame,begin_event,end_event)->openpyxl.W
     :param begin_event:дата конца
     :return: файл openpyxl
     """
+    diag_df['ФИО']=diag_df['ФИО'].apply(lambda x:x.strip())
+    temp_req_df = diag_df.copy()
+
     # разворачиваем датафрейм чтобы названия и даты диагностик записанные через запятую создали новые строки
     diag_rows = []  # список для хранения строк
     for index, row in diag_df.iterrows():
@@ -147,6 +167,12 @@ def generate_report_diag(diag_df:pd.DataFrame,begin_event,end_event)->openpyxl.W
 
 
     drop_dupl_diag_df = diag_df.drop_duplicates(subset=['ФИО', 'Дата рождения', 'образовательная организация']) # убираем лишние строки
+
+    # отбираем из исходного датафрейма те строки которые есть в diag_df а значит проходили этой осенью
+
+    req_df = temp_req_df[temp_req_df['ФИО']].isin(drop_dupl_diag_df['ФИО'])
+    req_df.to_excel('dfs.xlsx')
+
     # делаем сводную таблицу
     svod_diag_df = pd.pivot_table(drop_dupl_diag_df,
                                   index=['Муниципалитет', 'образовательная организация'],
